@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Count by Country</title>
+<style>
+  :root {
+    --ink: #1c2733;
+    --muted: #6b7a8c;
+    --line: #dfe5ec;
+    --bar: #2f7d8f;
+    --bg: #f7f9fb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 20px 64px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 13px; font-weight: 600; color: var(--muted);
+    padding: 0 0 10px; border-bottom: 1px solid var(--line);
+  }
+  th.num, td.num { text-align: right; }
+  td { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  td.num { font-variant-numeric: tabular-nums; font-weight: 600; width: 72px; }
+  .bar-cell { width: 45%; padding-left: 16px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--bar); min-width: 3px; }
+  .state { color: var(--muted); padding: 24px 0; }
+  .state.error { color: #a63a2f; }
+  .total { margin-top: 24px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Student count by country</h1>
+  <p class="sub">Live from Azure SQL Database</p>
+
+  <p id="state" class="state">Loading data…</p>
+
+  <table id="table" hidden>
+    <thead>
+      <tr>
+        <th>Country</th>
+        <th class="num">Students</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p id="total" class="total" hidden></p>
+</main>
+
+<script>
+async function loadStudentCounts() {
+  const state = document.getElementById('state');
+  const table = document.getElementById('table');
+  const total = document.getElementById('total');
+
+  try {
+    const response = await fetch('/api/students');
+    if (!response.ok) {
+      throw new Error('The API returned status ' + response.status);
+    }
+    const rows = await response.json();
+
+    if (!rows.length) {
+      state.textContent = 'No student records found in the database.';
+      return;
+    }
+
+    const max = Math.max(...rows.map(r => r.StudentCount));
+    const sum = rows.reduce((acc, r) => acc + r.StudentCount, 0);
+
+    table.querySelector('tbody').innerHTML = rows.map(row => `
+      <tr>
+        <td>${row.Country}</td>
+        <td class="num">${row.StudentCount}</td>
+        <td class="bar-cell">
+          <div class="bar" style="width:${(row.StudentCount / max * 100).toFixed(1)}%"></div>
+        </td>
+      </tr>`).join('');
+
+    total.textContent = `${rows.length} countries, ${sum} students total.`;
+    state.hidden = true;
+    table.hidden = false;
+    total.hidden = false;
+  } catch (err) {
+    state.className = 'state error';
+    state.textContent = 'Could not load the data: ' + err.message;
+  }
+}
+
+loadStudentCounts();
+</script>
+</body>
+</html>
