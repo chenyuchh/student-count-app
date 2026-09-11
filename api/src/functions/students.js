@@ -9,7 +9,9 @@ const config = {
     options: {
         encrypt: true,
         trustServerCertificate: false
-    }
+    },
+    connnectionTimeout: 600000,
+    requestTimeout: 60000
 };
 
 app.http('students', {
